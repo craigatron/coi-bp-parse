@@ -1,0 +1,26 @@
+{
+  "name": "coi-bp-parse",
+  "version": "0.1.0",
+  "description": "Blueprint parser for Captain of Industry",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "/dist"
+  ],
+  "scripts": {
+    "prepublish": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Captain of Industry"
+  ],
+  "author": "Craig Martek <craig@martek.dev>",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/pako": "^2.0.0",
+    "typescript": "^5.1.6"
+  },
+  "dependencies": {
+    "pako": "^2.1.0"
+  }
+}
