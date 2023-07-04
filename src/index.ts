@@ -29,6 +29,14 @@ export interface Blueprint {
   rawItems: ParsedComponentValues[];
 }
 
+export interface BlueprintFolder {
+  libraryVersion: number;
+  name: string;
+  description?: string;
+  blueprints: Blueprint[];
+  blueprintFolders: BlueprintFolder[];
+}
+
 class Stream {
   index: number;
   array: Uint8Array;
@@ -127,12 +135,12 @@ class Stream {
   };
 }
 
-export const parseBlueprint = (bp: string): Blueprint => {
+const validateBlueprintString = (bp: string, typeHeader: string): Stream => {
   if (bp.length <= 4) {
     throw new ParseError({ message: "Blueprint string too short" });
   }
   const header = bp[0];
-  if (header !== "B") {
+  if (header !== typeHeader) {
     throw new ParseError({ message: "Unexpected header" });
   }
   const split = bp.split(":");
@@ -149,7 +157,6 @@ export const parseBlueprint = (bp: string): Blueprint => {
       message: `Failed checksum: expected ${checksum}, actual ${split[1].length}`,
     });
   }
-
   let ungzipped: Uint8Array;
   try {
     const base64decoded = atob(split[1]);
@@ -161,15 +168,24 @@ export const parseBlueprint = (bp: string): Blueprint => {
     });
   }
 
-  const stream = new Stream(ungzipped);
+  return new Stream(ungzipped);
+};
 
+export const parseBlueprint = (bp: string): Blueprint => {
+  const stream = validateBlueprintString(bp, "B");
   const libraryVersion = stream.readNonNegativeInt();
   if (libraryVersion !== 1) {
     throw new ParseError({
-      message: `Unsupported library version: ${ungzipped[0]}`,
+      message: `Unsupported library version: ${libraryVersion}`,
     });
   }
+  return parseBlueprintInternal(stream, libraryVersion);
+};
 
+const parseBlueprintInternal = (
+  stream: Stream,
+  libraryVersion: number
+): Blueprint => {
   const gameVersion = stream.readString();
   const saveVersion = stream.readNonNegativeInt();
   const name = stream.readString();
@@ -241,4 +257,43 @@ const parseEntity = (stream: Stream): ParsedComponentValues => {
     stringLists,
     byteArrays,
   };
+};
+
+const parseBlueprintFolderInternal = (
+  stream: Stream,
+  libraryVersion: number
+): BlueprintFolder => {
+  const name = stream.readString();
+  const description = stream.readString();
+  const folderLength = stream.readNonNegativeInt();
+
+  const blueprintFolders: BlueprintFolder[] = [];
+  for (let i = 0; i < folderLength; i++) {
+    blueprintFolders.push(parseBlueprintFolderInternal(stream, libraryVersion));
+  }
+
+  const bpLength = stream.readNonNegativeInt();
+  const blueprints: Blueprint[] = [];
+  for (let i = 0; i < bpLength; i++) {
+    blueprints.push(parseBlueprintInternal(stream, libraryVersion));
+  }
+
+  return {
+    libraryVersion,
+    name,
+    description,
+    blueprintFolders,
+    blueprints,
+  };
+};
+
+export const parseBlueprintFolder = (bp: string): BlueprintFolder => {
+  const stream = validateBlueprintString(bp, "F");
+  const libraryVersion = stream.readNonNegativeInt();
+  if (libraryVersion !== 1) {
+    throw new ParseError({
+      message: `Unsupported library version: ${libraryVersion}`,
+    });
+  }
+  return parseBlueprintFolderInternal(stream, libraryVersion);
 };
