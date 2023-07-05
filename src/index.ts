@@ -48,8 +48,12 @@ class Stream {
     this.array = array;
   }
 
+  isExhausted = (): boolean => {
+    return this.index >= this.array.length;
+  };
+
   readByte = (): number => {
-    if (this.index > this.array.length) {
+    if (this.isExhausted()) {
       throw new ParseError({ message: "stream is exhausted" });
     }
     return this.array[this.index++];
@@ -57,11 +61,12 @@ class Stream {
 
   readBytes = (numBytes: number): Uint8Array => {
     const startIndex = this.index;
-    this.index += numBytes;
-    if (this.index > this.array.length) {
+    this.index += numBytes - 1;
+    if (this.isExhausted()) {
       throw new ParseError({ message: "stream is exhausted" });
     }
-    return this.array.slice(startIndex, this.index);
+
+    return this.array.slice(startIndex, ++this.index);
   };
 
   readUInt = (): number => {
@@ -179,7 +184,12 @@ export const parseBlueprint = (bp: string): Blueprint => {
       message: `Unsupported library version: ${libraryVersion}`,
     });
   }
-  return parseBlueprintInternal(stream, libraryVersion);
+  const blueprint = parseBlueprintInternal(stream, libraryVersion);
+
+  if (!stream.isExhausted()) {
+    throw new ParseError({ message: "Expected stream to be exhausted" });
+  }
+  return blueprint;
 };
 
 const parseBlueprintInternal = (
@@ -295,5 +305,10 @@ export const parseBlueprintFolder = (bp: string): BlueprintFolder => {
       message: `Unsupported library version: ${libraryVersion}`,
     });
   }
-  return parseBlueprintFolderInternal(stream, libraryVersion);
+  const folder = parseBlueprintFolderInternal(stream, libraryVersion);
+
+  if (!stream.isExhausted()) {
+    throw new ParseError({ message: "Expected stream to be exhausted" });
+  }
+  return folder;
 };
