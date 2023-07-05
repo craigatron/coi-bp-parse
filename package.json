@@ -1,6 +1,6 @@
 {
   "name": "coi-bp-parse",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Blueprint parser for Captain of Industry",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
