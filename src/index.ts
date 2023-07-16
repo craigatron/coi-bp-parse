@@ -109,7 +109,7 @@ class Stream {
 
   readString = (): string => {
     const id = this.readNonNegativeInt();
-    if (this.memoized[id]) {
+    if (id < this.memoized.length) {
       return this.memoized[id] as string;
     }
 
