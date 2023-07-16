@@ -20,6 +20,7 @@ export interface ParsedComponentValues {
 }
 
 export interface Blueprint {
+  kind: "blueprint";
   libraryVersion: number;
   gameVersion: string;
   saveVersion: number;
@@ -30,6 +31,7 @@ export interface Blueprint {
 }
 
 export interface BlueprintFolder {
+  kind: "folder";
   libraryVersion: number;
   name: string;
   description?: string;
@@ -215,6 +217,7 @@ const parseBlueprintInternal = (
   }
 
   return {
+    kind: "blueprint",
     libraryVersion,
     gameVersion,
     saveVersion,
@@ -289,6 +292,7 @@ const parseBlueprintFolderInternal = (
   }
 
   return {
+    kind: "folder",
     libraryVersion,
     name,
     description,
@@ -311,4 +315,16 @@ export const parseBlueprintFolder = (bp: string): BlueprintFolder => {
     throw new ParseError({ message: "Expected stream to be exhausted" });
   }
   return folder;
+};
+
+export const parseBlueprintOrFolder = (
+  bp: string
+): Blueprint | BlueprintFolder => {
+  if (bp.startsWith("B")) {
+    return parseBlueprint(bp);
+  }
+  if (bp.startsWith("F")) {
+    return parseBlueprintFolder(bp);
+  }
+  throw new ParseError({ message: "Invalid blueprint string" });
 };
